@@ -119,7 +119,6 @@ color:white;
 <h3>Booking History</h3>
 
 <table>
-
 <thead>
 <tr>
 <th>Customer</th>
@@ -163,19 +162,29 @@ const db=getDatabase(app);
 const auth=getAuth(app);
 
 
-// LOAD LOCATIONS COUNT
+// 🔥 GET SELECTED LOCATION ID
+const locationID = localStorage.getItem("selectedLocationID");
 
-onValue(ref(db,"parkingLocations"),snap=>{
+if(!locationID){
+alert("No location selected");
+window.location.href="owner-dashboard.html";
+}
+
+
+// ================= LOCATION INFO =================
+
+onValue(ref(db,"parkingLocations/"+locationID),snap=>{
 
 if(snap.exists()){
-document.getElementById("totalLocations").innerText =
-Object.keys(snap.val()).length;
+document.getElementById("totalLocations").innerText = 1;
+}else{
+document.getElementById("totalLocations").innerText = 0;
 }
 
 });
 
 
-// LOAD BOOKINGS ANALYTICS
+// ================= BOOKINGS ANALYTICS =================
 
 onValue(ref(db,"bookings"),snap=>{
 
@@ -190,6 +199,9 @@ if(snap.exists()){
 
 Object.values(snap.val()).forEach(b=>{
 
+// 🔥 FILTER BOOKINGS BY LOCATION
+if(b.locationID !== locationID) return;
+
 totalBookings++;
 
 if(b.status==="active"){
@@ -201,12 +213,12 @@ earnings += Number(b.price || 0);
 let row=document.createElement("tr");
 
 row.innerHTML=`
-<td>${b.customerName}</td>
-<td>${b.vehicleNumber}</td>
-<td>${b.vehicleType}</td>
-<td>${b.entryTime}</td>
+<td>${b.customerName || "-"}</td>
+<td>${b.vehicleNumber || "-"}</td>
+<td>${b.vehicleType || "-"}</td>
+<td>${b.entryTime || "-"}</td>
 <td>${b.exitTime || "-"}</td>
-<td>${b.status}</td>
+<td>${b.status || "-"}</td>
 <td>₹${b.price || 0}</td>
 `;
 
@@ -216,14 +228,14 @@ table.appendChild(row);
 
 }
 
-document.getElementById("totalBookings").innerText=totalBookings;
-document.getElementById("activeBookings").innerText=activeBookings;
-document.getElementById("totalEarnings").innerText="₹"+earnings;
+document.getElementById("totalBookings").innerText = totalBookings;
+document.getElementById("activeBookings").innerText = activeBookings;
+document.getElementById("totalEarnings").innerText = "₹"+earnings;
 
 });
 
 
-// LOGOUT
+// ================= LOGOUT =================
 
 window.logout=function(){
 signOut(auth).then(()=>{
