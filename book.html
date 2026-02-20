@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Book Parking</title>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#f4f6f9;
+}
+
+.header{
+background:#1f2937;
+color:white;
+padding:15px 20px;
+}
+
+.container{
+max-width:1000px;
+margin:auto;
+padding:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:12px;
+box-shadow:0 5px 15px rgba(0,0,0,0.08);
+margin-bottom:20px;
+}
+
+.card h2{
+color:#2d8cff;
+margin-bottom:10px;
+}
+
+input, select{
+width:100%;
+padding:10px;
+margin:8px 0;
+}
+
+button{
+padding:10px;
+background:#2d8cff;
+color:white;
+border:none;
+cursor:pointer;
+width:100%;
+}
+
+.status{
+margin-top:10px;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+<h2>🚗 Book Parking Slot</h2>
+</div>
+
+<div class="container">
+
+<div class="card">
+<h2 id="locationName">Loading...</h2>
+<p><b>Company:</b> <span id="company"></span></p>
+<p><b>Address:</b> <span id="address"></span></p>
+<p><b>Available Slots:</b> <span id="available"></span></p>
+</div>
+
+<div class="card">
+<h3>Book Your Slot</h3>
+
+<input id="customerName" placeholder="Your Name">
+<input id="vehicleNumber" placeholder="Vehicle Number">
+
+<select id="vehicleType">
+<option value="bike">Bike</option>
+<option value="car">Car</option>
+<option value="truck">Truck</option>
+</select>
+
+<button onclick="bookSlot()">Confirm Booking</button>
+
+<div class="status" id="status"></div>
+
+</div>
+
+</div>
+
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, get, update, push, set }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyAkbz_WM6KT56g1awB-TviU8Uo1svrivJw",
+authDomain:"carparkingapp-9267e.firebaseapp.com",
+databaseURL:"https://carparkingapp-9267e-default-rtdb.firebaseio.com/",
+projectId:"carparkingapp-9267e"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
+
+// 🔥 GET SELECTED LOCATION ID
+const locationID = localStorage.getItem("selectedLocationID");
+
+if(!locationID){
+alert("No location selected");
+window.location.href="index.html";
+}
+
+let currentLocationData = null;
+
+// LOAD LOCATION DETAILS
+
+const locationRef = ref(db,"parkingLocations/"+locationID);
+
+get(locationRef).then(snapshot=>{
+
+if(snapshot.exists()){
+
+const data = snapshot.val();
+currentLocationData = data;
+
+document.getElementById("locationName").innerText = data.name;
+document.getElementById("company").innerText = data.company;
+document.getElementById("address").innerText = data.address;
+document.getElementById("available").innerText =
+data.availableSlots + "/" + data.totalSlots;
+
+}
+
+});
+
+
+// BOOK SLOT FUNCTION
+
+window.bookSlot = async function(){
+
+const name = document.getElementById("customerName").value;
+const vehicleNumber = document.getElementById("vehicleNumber").value;
+const vehicleType = document.getElementById("vehicleType").value;
+
+if(!name || !vehicleNumber){
+alert("Fill all details");
+return;
+}
+
+if(currentLocationData.availableSlots <= 0){
+alert("No slots available");
+return;
+}
+
+const price = currentLocationData.prices[vehicleType] || 0;
+
+// CREATE BOOKING
+const bookingRef = push(ref(db,"bookings"));
+
+await set(bookingRef,{
+customerName:name,
+vehicleNumber:vehicleNumber,
+vehicleType:vehicleType,
+locationID:locationID,
+entryTime:new Date().toLocaleString(),
+status:"active",
+price:price
+});
+
+// UPDATE SLOT COUNT
+await update(ref(db,"parkingLocations/"+locationID),{
+availableSlots: currentLocationData.availableSlots - 1,
+earnings: (currentLocationData.earnings || 0) + price
+});
+
+document.getElementById("status").innerText =
+"✅ Booking Confirmed!";
+
+location.reload();
+
+};
+
+</script>
+
+</body>
+</html>
