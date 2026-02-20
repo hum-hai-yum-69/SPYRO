@@ -2,11 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Smart Parking - Customer</title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Segoe UI',Arial,sans-serif;
+}
 
 body{
 height:100vh;
@@ -15,21 +21,34 @@ justify-content:center;
 align-items:center;
 background:
 linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)),
-url("carparking.jpeg") center/cover no-repeat;
+url("https://images.unsplash.com/photo-1506521781263-d8422e82f27a")
+center/cover no-repeat;
+}
+
+/* BACK BUTTON */
+.back-btn{
+position:absolute;
+top:20px;
+left:20px;
+font-size:22px;
+color:white;
+cursor:pointer;
+background:rgba(0,0,0,0.6);
+padding:8px 12px;
+border-radius:50%;
 }
 
 .box{
 width:380px;
 padding:35px;
-background:rgba(255,255,255,0.12);
-backdrop-filter:blur(20px);
+background:linear-gradient(135deg,#2196F3,#00BCD4);
 border-radius:18px;
-box-shadow:0 10px 40px rgba(0,0,0,0.4);
+box-shadow:0 0 25px rgba(0,255,255,0.7);
 text-align:center;
 color:white;
 }
 
-h2{margin-bottom:20px;}
+h2{ margin-bottom:20px; }
 
 input{
 width:100%;
@@ -37,12 +56,12 @@ padding:12px;
 margin:8px 0;
 border-radius:8px;
 border:none;
-background:rgba(255,255,255,0.2);
+background:rgba(255,255,255,0.25);
 color:white;
 outline:none;
 }
 
-input::placeholder{color:#eee;}
+input::placeholder{ color:#eee; }
 
 button{
 width:100%;
@@ -52,55 +71,70 @@ border-radius:10px;
 margin-top:12px;
 cursor:pointer;
 font-weight:bold;
-background:linear-gradient(45deg,#2196F3,#00BCD4);
+background:linear-gradient(45deg,#ff9800,#ff5722);
 color:white;
-transition:0.3s;
 }
-
-button:hover{transform:translateY(-2px);}
-button:disabled{opacity:.6;cursor:not-allowed;}
 
 .switch{
 margin-top:12px;
-font-size:13px;
+font-size:14px;
 cursor:pointer;
 color:#ffeb3b;
 }
 
-.error{color:#ff5252;margin-top:10px;}
-.success{color:#69f0ae;margin-top:10px;}
+.error{ color:#ff1744; font-size:13px; margin-top:10px; }
+.success{ color:#69f0ae; font-size:13px; margin-top:10px; }
+
 </style>
 </head>
+
 <body>
 
+<div class="back-btn" onclick="window.history.back()">⬅</div>
+
 <div class="box">
+
 <h2 id="title">Customer Login</h2>
 
 <input id="name" placeholder="Full Name" style="display:none">
-<input id="phone" type="tel" placeholder="Phone Number" style="display:none">
+<input id="phone" placeholder="Phone Number" style="display:none">
 
-<input id="email" type="email" placeholder="Email">
+<input id="email" type="email" placeholder="Gmail">
 <input id="password" type="password" placeholder="Password">
 <input id="confirm" type="password" placeholder="Confirm Password" style="display:none">
 
-<button id="mainBtn">Login</button>
+<button type="button" id="mainBtn">Login</button>
 
 <div class="switch" id="switchText">
 Don’t have account? Create account
 </div>
 
 <div id="status"></div>
-</div>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, set }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* Firebase Config */
+</div>
+
+<script type="module">
+
+import { initializeApp } from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getAuth,
+createUserWithEmailAndPassword,
+signInWithEmailAndPassword
+} from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+getDatabase,
+ref,
+set
+} from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+
 const firebaseConfig = {
-apiKey: "AIzaSyAkbz_WM6KT56g1awB-TviU8Uo1svrivJw",
+apiKey:"AIzaSyAkbz_WM6KT56g1awB-TviU8Uo1svrivJw",
 authDomain:"carparkingapp-9267e.firebaseapp.com",
 databaseURL:"https://carparkingapp-9267e-default-rtdb.firebaseio.com/",
 projectId:"carparkingapp-9267e"
@@ -110,107 +144,119 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-/* Elements */
-const title = document.getElementById("title");
-const mainBtn = document.getElementById("mainBtn");
-const switchText = document.getElementById("switchText");
-const statusBox = document.getElementById("status");
-
-const nameInput = document.getElementById("name");
-const phoneInput = document.getElementById("phone");
-const emailInput = document.getElementById("email");
-const passInput = document.getElementById("password");
-const confirmInput = document.getElementById("confirm");
-
 let isLogin = true;
 
-/* Session Check */
-onAuthStateChanged(auth, (user)=>{
-if(user){
-window.location.href="customer.html";
-}
-});
+const mainBtn = document.getElementById("mainBtn");
+const switchText = document.getElementById("switchText");
 
-/* Toggle Form */
-switchText.onclick = () => {
+switchText.addEventListener("click", toggleForm);
+mainBtn.addEventListener("click", mainAction);
+
+function toggleForm(){
 isLogin = !isLogin;
 
-nameInput.style.display = isLogin ? "none" : "block";
-phoneInput.style.display = isLogin ? "none" : "block";
-confirmInput.style.display = isLogin ? "none" : "block";
+document.getElementById("name").style.display =
+isLogin ? "none" : "block";
 
-title.innerText = isLogin ? "Customer Login" : "Create Customer Account";
-mainBtn.innerText = isLogin ? "Login" : "Create Account";
-switchText.innerText = isLogin
-? "Don’t have account? Create account"
-: "Already have account? Login";
+document.getElementById("phone").style.display =
+isLogin ? "none" : "block";
 
-statusBox.innerHTML = "";
-};
+document.getElementById("confirm").style.display =
+isLogin ? "none" : "block";
 
-/* Main Action */
-mainBtn.onclick = async () => {
+document.getElementById("title").innerText =
+isLogin ? "Customer Login" : "Create Account";
 
-const email = emailInput.value.trim();
-const password = passInput.value.trim();
+mainBtn.innerText =
+isLogin ? "Login" : "Register";
 
-if(!email || !password){
-showError("All fields required");
+switchText.innerText =
+isLogin ?
+"Don’t have account? Create account" :
+"Already have account? Login";
+
+document.getElementById("status").innerHTML="";
+}
+
+function mainAction(){
+
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value.trim();
+const status=document.getElementById("status");
+
+status.innerHTML="";
+
+if(email==="" || password===""){
+status.innerHTML="<div class='error'>All fields required</div>";
 return;
 }
 
-mainBtn.disabled = true;
-
-try{
-
 if(isLogin){
-await signInWithEmailAndPassword(auth,email,password);
-showSuccess("Login Successful");
 
-}else{
-const name = nameInput.value.trim();
-const phone = phoneInput.value.trim();
-const confirm = confirmInput.value.trim();
+signInWithEmailAndPassword(auth,email,password)
+.then(()=>{
+status.innerHTML="<div class='success'>Login Successful</div>";
 
-if(!name || !phone || !confirm){
-throw new Error("Fill all details");
+setTimeout(()=>{
+window.location.href="user.html";
+},800);
+
+})
+.catch(err=>{
+status.innerHTML="<div class='error'>"+err.message+"</div>";
+});
+
 }
-if(password.length < 6){
-throw new Error("Password must be 6+ characters");
+else{
+
+const name=document.getElementById("name").value.trim();
+const phone=document.getElementById("phone").value.trim();
+const confirm=document.getElementById("confirm").value.trim();
+
+if(name===""||phone===""||confirm===""){
+status.innerHTML="<div class='error'>Fill all details</div>";
+return;
 }
-if(password !== confirm){
-throw new Error("Passwords do not match");
+
+if(password.length<6){
+status.innerHTML="<div class='error'>Password must be 6+ characters</div>";
+return;
 }
 
-const cred = await createUserWithEmailAndPassword(auth,email,password);
+if(password!==confirm){
+status.innerHTML="<div class='error'>Passwords not match</div>";
+return;
+}
 
-const customerId = "CUST-" + Math.floor(100000 + Math.random()*900000);
+const customerId="CUST-"+Math.floor(100000+Math.random()*900000);
 
-await set(ref(db,"customers/"+cred.user.uid),{
-customerId,
-name,
-phone,
-email,
+createUserWithEmailAndPassword(auth,email,password)
+.then((cred)=>{
+set(ref(db,"customers/"+cred.user.uid),{
+customerId,name,phone,email,
 createdAt:Date.now()
 });
 
-showSuccess("Account Created Successfully");
+status.innerHTML="<div class='success'>Account Created</div>";
+toggleForm();
+})
+.catch(err=>{
+status.innerHTML="<div class='error'>"+err.message+"</div>";
+});
+
 }
 
-}catch(err){
-showError(err.message);
 }
 
-mainBtn.disabled = false;
-};
+/* Disable Enter refresh */
+document.addEventListener("keydown",(e)=>{
+if(e.key==="Enter"){
+e.preventDefault();
+mainAction();
+}
+});
 
-/* Helpers */
-function showError(msg){
-statusBox.innerHTML = `<div class="error">${msg}</div>`;
-}
-function showSuccess(msg){
-statusBox.innerHTML = `<div class="success">${msg}</div>`;
-}
 </script>
+
 </body>
 </html>
