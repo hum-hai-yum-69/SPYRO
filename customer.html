@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Smart Parking - Customer</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
+
+body{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:
+linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)),
+url("carparking.jpeg") center/cover no-repeat;
+}
+
+.box{
+width:380px;
+padding:35px;
+background:rgba(255,255,255,0.12);
+backdrop-filter:blur(20px);
+border-radius:18px;
+box-shadow:0 10px 40px rgba(0,0,0,0.4);
+text-align:center;
+color:white;
+}
+
+h2{margin-bottom:20px;}
+
+input{
+width:100%;
+padding:12px;
+margin:8px 0;
+border-radius:8px;
+border:none;
+background:rgba(255,255,255,0.2);
+color:white;
+outline:none;
+}
+
+input::placeholder{color:#eee;}
+
+button{
+width:100%;
+padding:13px;
+border:none;
+border-radius:10px;
+margin-top:12px;
+cursor:pointer;
+font-weight:bold;
+background:linear-gradient(45deg,#2196F3,#00BCD4);
+color:white;
+transition:0.3s;
+}
+
+button:hover{transform:translateY(-2px);}
+button:disabled{opacity:.6;cursor:not-allowed;}
+
+.switch{
+margin-top:12px;
+font-size:13px;
+cursor:pointer;
+color:#ffeb3b;
+}
+
+.error{color:#ff5252;margin-top:10px;}
+.success{color:#69f0ae;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<div class="box">
+<h2 id="title">Customer Login</h2>
+
+<input id="name" placeholder="Full Name" style="display:none">
+<input id="phone" type="tel" placeholder="Phone Number" style="display:none">
+
+<input id="email" type="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<input id="confirm" type="password" placeholder="Confirm Password" style="display:none">
+
+<button id="mainBtn">Login</button>
+
+<div class="switch" id="switchText">
+Don’t have account? Create account
+</div>
+
+<div id="status"></div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, set }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* Firebase Config */
+const firebaseConfig = {
+apiKey: "AIzaSyAkbz_WM6KT56g1awB-TviU8Uo1svrivJw",
+authDomain:"carparkingapp-9267e.firebaseapp.com",
+databaseURL:"https://carparkingapp-9267e-default-rtdb.firebaseio.com/",
+projectId:"carparkingapp-9267e"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+/* Elements */
+const title = document.getElementById("title");
+const mainBtn = document.getElementById("mainBtn");
+const switchText = document.getElementById("switchText");
+const statusBox = document.getElementById("status");
+
+const nameInput = document.getElementById("name");
+const phoneInput = document.getElementById("phone");
+const emailInput = document.getElementById("email");
+const passInput = document.getElementById("password");
+const confirmInput = document.getElementById("confirm");
+
+let isLogin = true;
+
+/* Session Check */
+onAuthStateChanged(auth, (user)=>{
+if(user){
+window.location.href="customer.html";
+}
+});
+
+/* Toggle Form */
+switchText.onclick = () => {
+isLogin = !isLogin;
+
+nameInput.style.display = isLogin ? "none" : "block";
+phoneInput.style.display = isLogin ? "none" : "block";
+confirmInput.style.display = isLogin ? "none" : "block";
+
+title.innerText = isLogin ? "Customer Login" : "Create Customer Account";
+mainBtn.innerText = isLogin ? "Login" : "Create Account";
+switchText.innerText = isLogin
+? "Don’t have account? Create account"
+: "Already have account? Login";
+
+statusBox.innerHTML = "";
+};
+
+/* Main Action */
+mainBtn.onclick = async () => {
+
+const email = emailInput.value.trim();
+const password = passInput.value.trim();
+
+if(!email || !password){
+showError("All fields required");
+return;
+}
+
+mainBtn.disabled = true;
+
+try{
+
+if(isLogin){
+await signInWithEmailAndPassword(auth,email,password);
+showSuccess("Login Successful");
+
+}else{
+const name = nameInput.value.trim();
+const phone = phoneInput.value.trim();
+const confirm = confirmInput.value.trim();
+
+if(!name || !phone || !confirm){
+throw new Error("Fill all details");
+}
+if(password.length < 6){
+throw new Error("Password must be 6+ characters");
+}
+if(password !== confirm){
+throw new Error("Passwords do not match");
+}
+
+const cred = await createUserWithEmailAndPassword(auth,email,password);
+
+const customerId = "CUST-" + Math.floor(100000 + Math.random()*900000);
+
+await set(ref(db,"customers/"+cred.user.uid),{
+customerId,
+name,
+phone,
+email,
+createdAt:Date.now()
+});
+
+showSuccess("Account Created Successfully");
+}
+
+}catch(err){
+showError(err.message);
+}
+
+mainBtn.disabled = false;
+};
+
+/* Helpers */
+function showError(msg){
+statusBox.innerHTML = `<div class="error">${msg}</div>`;
+}
+function showSuccess(msg){
+statusBox.innerHTML = `<div class="success">${msg}</div>`;
+}
+</script>
+</body>
+</html>
