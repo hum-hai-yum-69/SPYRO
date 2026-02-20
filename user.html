@@ -316,59 +316,152 @@
         © 2026 ParkFast • Smart Parking Solution
     </div>
 
-    <script>
+<script type="module">
 
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "firebase/app";
-        import { getAnalytics } from "firebase/analytics";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
+/* ================= FIREBASE CONNECT ================= */
 
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-            apiKey: "AIzaSyAkbz_WM6KT56g1awB-TviU8Uo1svrivJw",
-            authDomain: "carparkingapp-9267e.firebaseapp.com",
-            databaseURL: "https://carparkingapp-9267e-default-rtdb.firebaseio.com",
-            projectId: "carparkingapp-9267e",
-            storageBucket: "carparkingapp-9267e.firebasestorage.app",
-            messagingSenderId: "1052678294925",
-            appId: "1:1052678294925:web:95eea95654ac6bb193c1c4",
-            measurementId: "G-QWSLKRQ087"
-        };
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, get } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const slides = document.getElementById("slides");
-        const total = document.querySelectorAll(".slide").length;
-        const dots = document.getElementById("dots");
-        let index = 0;
+const firebaseConfig = {
+    apiKey: "AIzaSyAkbz_WM6KT56g1awB-TviU8Uo1svrivJw",
+    authDomain: "carparkingapp-9267e.firebaseapp.com",
+    databaseURL: "https://carparkingapp-9267e-default-rtdb.firebaseio.com",
+    projectId: "carparkingapp-9267e"
+};
 
-        for (let i = 0; i < total; i++) {
-            const d = document.createElement("span");
-            d.className = "dot";
-            if (i === 0) d.classList.add("active");
-            d.onclick = () => go(i);
-            dots.appendChild(d);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+/* ================= SEARCH FUNCTION ================= */
+
+const searchBtn = document.querySelector(".search-btn");
+const searchInput = document.querySelector(".search-box input");
+
+/* Create result container */
+const resultSection = document.createElement("div");
+resultSection.style.maxWidth = "1100px";
+resultSection.style.margin = "30px auto";
+resultSection.style.padding = "0 15px";
+document.body.insertBefore(resultSection, document.querySelector(".footer"));
+
+searchBtn.addEventListener("click", searchParking);
+
+async function searchParking() {
+
+    const query = searchInput.value.trim().toLowerCase();
+
+    if (!query) {
+        alert("Please enter location");
+        return;
+    }
+
+    resultSection.innerHTML = "<h3>Searching parking...</h3>";
+
+    try {
+
+        // 🔥 IMPORTANT FIX: reading from parkingLocations
+        const snapshot = await get(ref(db, "parkingLocations"));
+
+        if (!snapshot.exists()) {
+            resultSection.innerHTML = "<h3>No Parking Data Found</h3>";
+            return;
         }
 
-        function update() {
-            slides.style.transform = `translateX(-${index * 100}%)`;
-            document.querySelectorAll(".dot").forEach(d => d.classList.remove("active"));
-            dots.children[index].classList.add("active");
+        let found = false;
+        resultSection.innerHTML = "<h2 style='margin-bottom:15px'>Available Parking</h2>";
+
+        snapshot.forEach(childSnap => {
+
+            const data = childSnap.val();
+
+            if (
+                data.name?.toLowerCase().includes(query) ||
+                data.address?.toLowerCase().includes(query)
+            ) {
+
+                found = true;
+
+                const card = document.createElement("div");
+                card.style.background = "#fff";
+                card.style.padding = "20px";
+                card.style.marginBottom = "15px";
+                card.style.borderRadius = "12px";
+                card.style.boxShadow = "0 8px 20px rgba(0,0,0,0.08)";
+                card.style.cursor = "pointer";
+
+                card.innerHTML = `
+                    <h3 style="color:#2d8cff;margin-bottom:8px">${data.name}</h3>
+                    <p><b>Company:</b> ${data.company}</p>
+                    <p><b>Address:</b> ${data.address}</p>
+                    <p><b>Available Slots:</b> ${data.availableSlots}/${data.totalSlots}</p>
+                    <p><b>Bike:</b> ₹${data.prices?.bike || 0} |
+                       <b>Car:</b> ₹${data.prices?.car || 0} |
+                       <b>Truck:</b> ₹${data.prices?.truck || 0}</p>
+                `;
+
+                // Redirect to booking page
+                card.onclick = () => {
+                    localStorage.setItem("selectedLocationID", childSnap.key);
+                    window.location.href = "locationAn.html";
+                };
+
+                resultSection.appendChild(card);
+            }
+
+        });
+
+        if (!found) {
+            resultSection.innerHTML = "<h3>No Parking Found in this Area</h3>";
         }
 
-        function go(i) { index = i; update(); }
+    } catch (error) {
+        console.error(error);
+        resultSection.innerHTML = "<h3>Error loading parking data</h3>";
+    }
+}
 
-        next.onclick = () => { index = (index + 1) % total; update(); };
-        prev.onclick = () => { index = (index - 1 + total) % total; update(); };
 
-        setInterval(() => { index = (index + 1) % total; update(); }, 5000);
+/* ================= SLIDER ================= */
 
-        
-    </script>
+const slides = document.getElementById("slides");
+const total = document.querySelectorAll(".slide").length;
+const dots = document.getElementById("dots");
+let index = 0;
 
+for (let i = 0; i < total; i++) {
+    const d = document.createElement("span");
+    d.className = "dot";
+    if (i === 0) d.classList.add("active");
+    d.onclick = () => go(i);
+    dots.appendChild(d);
+}
+
+function update() {
+    slides.style.transform = `translateX(-${index * 100}%)`;
+    document.querySelectorAll(".dot").forEach(d => d.classList.remove("active"));
+    dots.children[index].classList.add("active");
+}
+
+function go(i) { index = i; update(); }
+
+document.getElementById("next").onclick = () => {
+    index = (index + 1) % total;
+    update();
+};
+
+document.getElementById("prev").onclick = () => {
+    index = (index - 1 + total) % total;
+    update();
+};
+
+setInterval(() => {
+    index = (index + 1) % total;
+    update();
+}, 5000);
+
+</script>
 </body>
 
 </html>
